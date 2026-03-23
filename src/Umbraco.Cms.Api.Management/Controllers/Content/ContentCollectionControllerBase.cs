@@ -14,6 +14,13 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Api.Management.Controllers.Content;
 
+/// <summary>
+/// Serves as a base controller for managing collections of content items, providing shared functionality for handling content collections and their variants.
+/// </summary>
+/// <typeparam name="TContent">The content entity type.</typeparam>
+/// <typeparam name="TCollectionResponseModel">The response model type for the content collection.</typeparam>
+/// <typeparam name="TValueResponseModelBase">The base type for value response models within the collection.</typeparam>
+/// <typeparam name="TVariantResponseModel">The response model type for content variants.</typeparam>
 public abstract class ContentCollectionControllerBase<TContent, TCollectionResponseModel, TValueResponseModelBase, TVariantResponseModel> : ManagementApiControllerBase
     where TContent : class, IContentBase
     where TCollectionResponseModel : ContentResponseModelBase<TValueResponseModelBase, TVariantResponseModel>
@@ -27,39 +34,6 @@ public abstract class ContentCollectionControllerBase<TContent, TCollectionRespo
     {
         _mapper = mapper;
         _flagProviders = flagProvider;
-    }
-
-    [Obsolete("Use the constructer with all parameters. To be removed in Umbraco 18")]
-    protected ContentCollectionControllerBase(IUmbracoMapper mapper)
-        : this(mapper, StaticServiceProvider.Instance.GetRequiredService<FlagProviderCollection>())
-    {
-    }
-
-    [Obsolete("This method is no longer used and will be removed in Umbraco 17.")]
-    protected IActionResult CollectionResult(ListViewPagedModel<TContent> result)
-    {
-        PagedModel<TContent> collectionItemsResult = result.Items;
-        ListViewConfiguration collectionConfiguration = result.ListViewConfiguration;
-
-        var collectionPropertyAliases = collectionConfiguration
-            .IncludeProperties
-            .Select(p => p.Alias)
-            .WhereNotNull()
-            .ToArray();
-
-        List<TCollectionResponseModel> collectionResponseModels =
-            _mapper.MapEnumerable<TContent, TCollectionResponseModel>(collectionItemsResult.Items, context =>
-            {
-                context.SetIncludedProperties(collectionPropertyAliases);
-            });
-
-        var pageViewModel = new PagedViewModel<TCollectionResponseModel>
-        {
-            Items = collectionResponseModels,
-            Total = collectionItemsResult.Total,
-        };
-
-        return Ok(pageViewModel);
     }
 
     /// <summary>

@@ -1,8 +1,8 @@
+import type { Editor } from '../../externals.js';
 import { UmbTiptapToolbarElementApiBase } from '../tiptap-toolbar-element-api-base.js';
-import { UmbLink } from '@umbraco-cms/backoffice/external/tiptap';
+import { UmbLink } from './link.tiptap-extension.js';
 import { UMB_LINK_PICKER_MODAL } from '@umbraco-cms/backoffice/multi-url-picker';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
-import type { Editor } from '@umbraco-cms/backoffice/external/tiptap';
 import type { UmbLinkPickerLink } from '@umbraco-cms/backoffice/multi-url-picker';
 import type { UUIModalSidebarSize } from '@umbraco-cms/backoffice/external/uui';
 
@@ -31,6 +31,7 @@ export default class UmbTiptapToolbarLinkExtensionApi extends UmbTiptapToolbarEl
 
 	#getLinkData(attrs: Record<string, any>): UmbLinkPickerLink {
 		const queryString = attrs['data-anchor'];
+		const culture = attrs['data-culture'];
 		const url = attrs.href?.substring(0, attrs.href.length - (queryString?.length ?? 0));
 		const unique = url?.includes('localLink:') ? url.substring(url.indexOf(':') + 1, url.indexOf('}')) : null;
 
@@ -41,11 +42,12 @@ export default class UmbTiptapToolbarLinkExtensionApi extends UmbTiptapToolbarEl
 			type: attrs.type,
 			unique,
 			url,
+			culture,
 		};
 	}
 
 	#parseLinkData(link: UmbLinkPickerLink) {
-		const { name, target, type, unique } = link;
+		const { name, target, type, unique, culture } = link;
 		let { queryString, url } = link;
 
 		// If an anchor exists, check that it is appropriately prefixed
@@ -84,6 +86,7 @@ export default class UmbTiptapToolbarLinkExtensionApi extends UmbTiptapToolbarEl
 			'data-anchor': anchor,
 			target,
 			title: name ?? url,
+			'data-culture': culture,
 		};
 	}
 

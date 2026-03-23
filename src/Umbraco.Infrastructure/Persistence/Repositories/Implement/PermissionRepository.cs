@@ -26,8 +26,26 @@ namespace Umbraco.Cms.Infrastructure.Persistence.Repositories.Implement;
 internal sealed class PermissionRepository<TEntity> : EntityRepositoryBase<int, ContentPermissionSet>
     where TEntity : class, IEntity
 {
-    public PermissionRepository(IScopeAccessor scopeAccessor, AppCaches cache, ILogger<PermissionRepository<TEntity>> logger)
-        : base(scopeAccessor, cache, logger)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PermissionRepository{TEntity}"/> class.
+    /// </summary>
+    /// <param name="scopeAccessor">Provides access to the database scope.</param>
+    /// <param name="cache">The application-level cache.</param>
+    /// <param name="logger">The logger used for diagnostic and operational logging.</param>
+    /// <param name="repositoryCacheVersionService">Service for managing repository cache versions.</param>
+    /// <param name="cacheSyncService">Service for synchronizing cache across instances.</param>
+    public PermissionRepository(
+        IScopeAccessor scopeAccessor,
+        AppCaches cache,
+        ILogger<PermissionRepository<TEntity>> logger,
+        IRepositoryCacheVersionService repositoryCacheVersionService,
+        ICacheSyncService cacheSyncService)
+        : base(
+            scopeAccessor,
+            cache,
+            logger,
+            repositoryCacheVersionService,
+            cacheSyncService)
     {
     }
 
@@ -69,17 +87,19 @@ internal sealed class PermissionRepository<TEntity> : EntityRepositoryBase<int, 
         }
         else
         {
-            foreach (IEnumerable<int> entityGroup in entityIds.InGroupsOf(Constants.Sql.MaxParameterCount -
-                                                                    userGroupIds.Length))
+            foreach (IEnumerable<int> entityGroup in entityIds.InGroupsOf(Constants.Sql.MaxParameterCount - userGroupIds.Length))
             {
+                // Need to use a List here because the expression tree cannot convert the array when used in Contains.
+                // See ExpressionTests.Sql_In().
+                List<int> userGroupsIdsAsList = [.. userGroupIds];
                 Sql<ISqlContext> sql = Sql()
                     .Select<UserGroup2GranularPermissionDto>("gp").AndSelect("ug.id as userGroupId, en.id as entityId")
                     .From<UserGroupDto>("ug")
                     .InnerJoin<UserGroup2GranularPermissionDto>("gp")
-                    .On<UserGroup2GranularPermissionDto, UserGroupDto>((left, right) => left.UserGroupKey == right.Key && userGroupIds.Contains(right.Id), "gp", "ug")
+                    .On<UserGroup2GranularPermissionDto, UserGroupDto>((left, right) => left.UserGroupKey == right.Key && userGroupsIdsAsList.Contains(right.Id), "gp", "ug")
                     .InnerJoin<NodeDto>("en")
                     .On<UserGroup2GranularPermissionDto, NodeDto>((left, right) => left.UniqueId == right.UniqueId, "gp", "en")
-                    .Where<NodeDto>(en =>  entityGroup.Contains(en.NodeId), "en");
+                    .Where<NodeDto>(en => entityGroup.Contains(en.NodeId), "en");
 
                 List<UserGroup2GranularPermissionWithIdsDto> permissions =
                     AmbientScope.Database.Fetch<UserGroup2GranularPermissionWithIdsDto>(sql);

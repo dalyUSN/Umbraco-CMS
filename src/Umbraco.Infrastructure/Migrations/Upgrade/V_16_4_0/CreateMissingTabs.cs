@@ -112,24 +112,34 @@ public class CreateMissingTabs : AsyncMigrationBase
             missingTabsWithDetails.Count);
     }
 
-    private static string GetTabAliasQuery(DatabaseType databaseType, string columnName) =>
+    private static string GetTabAliasQuery(IDatabaseType databaseType, string columnName) =>
         databaseType == DatabaseType.SQLite
             ? $"substr({columnName}, 1, INSTR({columnName},'/') - 1)"
             : $"SUBSTRING({columnName}, 1, CHARINDEX('/', {columnName}) - 1)";
 
-    private static string CheckIfContainsTabAliasQuery(DatabaseType databaseType, string columnName) =>
+    private static string CheckIfContainsTabAliasQuery(IDatabaseType databaseType, string columnName) =>
         databaseType == DatabaseType.SQLite
             ? $"INSTR({columnName}, '/') > 0"
             : $"CHARINDEX('/', {columnName}) > 0";
 
     private class MissingTabWithDetails
     {
+        /// <summary>
+        /// Gets or sets the identifier of the content type node associated with the missing tab.
+        /// </summary>
         public required int ContentTypeNodeId { get; set; }
 
+        /// <summary>
+        /// Gets or sets the alias identifying the missing tab.
+        /// </summary>
         public required string Alias { get; set; }
 
+        /// <summary>
+        /// Gets or sets the display text (label) of the missing tab.
+        /// </summary>
         public required string Text { get; set; }
 
+        /// <summary>Gets or sets the sort order of the tab.</summary>
         public required int SortOrder { get; set; }
     }
 }
